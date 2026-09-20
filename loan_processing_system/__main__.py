@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from .workflow import LoanApplication, LoanProcessingWorkflow
+from .workflow import HumanReviewOutcome, LoanApplication, LoanProcessingWorkflow
 
 
 def main() -> None:
@@ -20,7 +20,12 @@ def main() -> None:
             documents=["government_id", "pay_stub", "bank_statement"],
             credit_score=725,
             external_data={"employer": "Acme Corp", "years_employed": 5},
-        )
+        ),
+        human_review=HumanReviewOutcome(
+            reviewer="underwriter@example.com",
+            decision="approve",
+            notes="Reviewed package and confirmed approval recommendation.",
+        ),
     )
     print(json.dumps(package, indent=2))
 

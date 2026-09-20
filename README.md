@@ -1,6 +1,6 @@
 # Multi-Agent-Loan-Processing-System
 
-A lightweight AI-style multi-agent loan processing system that automates customer onboarding, document verification, financial analysis, underwriting, risk assessment, and compliance review through a sequential workflow and human-reviewed final decision package.
+A lightweight AI-style multi-agent loan processing system that automates customer onboarding, document verification, financial analysis, underwriting, risk assessment, and compliance review through a sequential workflow and a human-reviewed final decision package.
 
 ## Workflow
 
@@ -27,6 +27,8 @@ The implementation uses specialized agents that run in order:
 ```bash
 python -m loan_processing_system
 ```
+
+The demo runs the full workflow and includes an example human review so the emitted decision package has a final decision. If you call `LoanProcessingWorkflow.process(...)` without a `HumanReviewOutcome`, the package remains in `pending_human_review`.
 
 ## Run tests
 
