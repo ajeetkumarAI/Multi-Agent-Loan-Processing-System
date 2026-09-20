@@ -111,13 +111,11 @@ class DecisionPackageGeneratorTool:
         application: LoanApplication,
         agent_results: list[AgentResult],
         recommended_decision: str,
-        hard_decline: bool,
         human_review: HumanReviewOutcome | None,
     ) -> dict[str, Any]:
         decision = LoanProcessingWorkflow.resolve_final_decision(
             recommended_decision,
             human_review,
-            hard_decline=hard_decline,
         )
         return {
             "application": asdict(application),
@@ -274,12 +272,10 @@ class LoanProcessingWorkflow:
             context[result.agent_name] = result.findings
 
         recommended_decision = self._recommend_decision(agent_results)
-        hard_decline = self._is_hard_decline(agent_results)
         return self.decision_package_tool.generate(
             application=application,
             agent_results=agent_results,
             recommended_decision=recommended_decision,
-            hard_decline=hard_decline,
             human_review=human_review,
         )
 
@@ -297,17 +293,9 @@ class LoanProcessingWorkflow:
             return "approve"
         return "manual_review"
 
-    @staticmethod
-    def _is_hard_decline(agent_results: list[AgentResult]) -> bool:
-        results_by_name = {result.agent_name: result for result in agent_results}
-        return results_by_name["risk_assessment"].findings["risk_tier"] == "critical"
-
-    @staticmethod
     def resolve_final_decision(
         recommended_decision: str,
         human_review: HumanReviewOutcome | None,
-        *,
-        hard_decline: bool,
     ) -> str:
         if human_review is None:
             return "pending_human_review"
@@ -320,8 +308,6 @@ class LoanProcessingWorkflow:
             raise ValueError(
                 "Human review decision must be one of: approve, decline, manual_review."
             )
-        if hard_decline and normalized_decision != "decline":
-            raise ValueError("Human review cannot override a workflow decline.")
-        if recommended_decision == "decline" and normalized_decision == "approve":
+        if recommended_decision == "decline" and normalized_decision != "decline":
             raise ValueError("Human review cannot override a workflow decline.")
         return normalized_decision
