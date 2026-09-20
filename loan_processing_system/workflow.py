@@ -122,7 +122,7 @@ class DecisionPackageGeneratorTool:
             "agent_results": [asdict(result) for result in agent_results],
             "agent_recommendation": recommended_decision,
             "final_decision": decision,
-            "human_review_required": True,
+            "human_review_required": human_review is None,
             "human_review": asdict(human_review) if human_review else None,
         }
 
