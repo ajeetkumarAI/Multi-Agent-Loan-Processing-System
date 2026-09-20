@@ -125,7 +125,7 @@ class LoanProcessingWorkflowTests(unittest.TestCase):
         package = self.workflow.process(application)
         results = {result["agent_name"]: result for result in package["agent_results"]}
 
-        self.assertEqual(package["agent_recommendation"], "decline")
+        self.assertEqual(package["agent_recommendation"], "manual_review")
         self.assertIn("pay_stub", results["document_verification"]["findings"]["missing_documents"])
         self.assertGreater(results["financial_analysis"]["findings"]["debt_to_income_ratio"], 0.45)
         self.assertEqual(results["risk_assessment"]["findings"]["risk_tier"], "high")
@@ -164,6 +164,38 @@ class LoanProcessingWorkflowTests(unittest.TestCase):
         self.assertEqual(analysis["monthly_income"], 0.0)
         self.assertEqual(analysis["estimated_payment"], 12000.0)
         self.assertEqual(analysis["debt_to_income_ratio"], 1.0)
+
+        with self.assertRaisesRegex(ValueError, "cannot be negative"):
+            FinancialCalculationTool().analyze(
+                annual_income=50000,
+                monthly_debt=500,
+                loan_amount=12000,
+                loan_term_months=-12,
+            )
+
+    def test_non_hard_decline_can_still_be_resolved_by_human_review(self) -> None:
+        package = self.workflow.process(
+            LoanApplication(
+                customer_id="CUST-88",
+                name="Jordan Consent",
+                email="jordan@example.com",
+                annual_income=85000,
+                monthly_debt=700,
+                loan_amount=15000,
+                loan_term_months=36,
+                purpose="education",
+                documents=["government_id", "pay_stub", "bank_statement"],
+                credit_score=700,
+                consent_provided=False,
+            ),
+            human_review=HumanReviewOutcome(
+                reviewer="reviewer@example.com",
+                decision="manual_review",
+            ),
+        )
+
+        self.assertEqual(package["agent_recommendation"], "manual_review")
+        self.assertEqual(package["final_decision"], "manual_review")
 
 
 if __name__ == "__main__":

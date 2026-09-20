@@ -75,7 +75,12 @@ class FinancialCalculationTool:
         loan_term_months: int,
     ) -> dict[str, float]:
         monthly_income = annual_income / 12 if annual_income else 0.0
-        estimated_payment = loan_amount / max(loan_term_months, 1)
+        if loan_term_months < 0:
+            raise ValueError("loan_term_months cannot be negative.")
+        if loan_term_months == 0:
+            estimated_payment = loan_amount
+        else:
+            estimated_payment = loan_amount / loan_term_months
         debt_to_income_ratio = (
             (monthly_debt + estimated_payment) / monthly_income if monthly_income else 1.0
         )
@@ -106,9 +111,14 @@ class DecisionPackageGeneratorTool:
         application: LoanApplication,
         agent_results: list[AgentResult],
         recommended_decision: str,
+        hard_decline: bool,
         human_review: HumanReviewOutcome | None,
     ) -> dict[str, Any]:
-        decision = LoanProcessingWorkflow.resolve_final_decision(recommended_decision, human_review)
+        decision = LoanProcessingWorkflow.resolve_final_decision(
+            recommended_decision,
+            human_review,
+            hard_decline=hard_decline,
+        )
         return {
             "application": asdict(application),
             "agent_results": [asdict(result) for result in agent_results],
@@ -264,10 +274,12 @@ class LoanProcessingWorkflow:
             context[result.agent_name] = result.findings
 
         recommended_decision = self._recommend_decision(agent_results)
+        hard_decline = self._is_hard_decline(agent_results)
         return self.decision_package_tool.generate(
             application=application,
             agent_results=agent_results,
             recommended_decision=recommended_decision,
+            hard_decline=hard_decline,
             human_review=human_review,
         )
 
@@ -280,15 +292,22 @@ class LoanProcessingWorkflow:
         if risk_tier == "critical":
             return "decline"
         if not compliance_ok:
-            return "decline"
+            return "manual_review"
         if underwriting_recommendation == "approve" and risk_tier in {"low", "moderate"}:
             return "approve"
         return "manual_review"
 
     @staticmethod
+    def _is_hard_decline(agent_results: list[AgentResult]) -> bool:
+        results_by_name = {result.agent_name: result for result in agent_results}
+        return results_by_name["risk_assessment"].findings["risk_tier"] == "critical"
+
+    @staticmethod
     def resolve_final_decision(
         recommended_decision: str,
         human_review: HumanReviewOutcome | None,
+        *,
+        hard_decline: bool,
     ) -> str:
         if human_review is None:
             return "pending_human_review"
@@ -301,6 +320,8 @@ class LoanProcessingWorkflow:
             raise ValueError(
                 "Human review decision must be one of: approve, decline, manual_review."
             )
-        if recommended_decision == "decline" and normalized_decision != "decline":
+        if hard_decline and normalized_decision != "decline":
+            raise ValueError("Human review cannot override a workflow decline.")
+        if recommended_decision == "decline" and normalized_decision == "approve":
             raise ValueError("Human review cannot override a workflow decline.")
         return normalized_decision
