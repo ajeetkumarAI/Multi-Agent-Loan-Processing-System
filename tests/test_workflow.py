@@ -55,6 +55,19 @@ class LoanProcessingWorkflowTests(unittest.TestCase):
         self.assertEqual(package["final_decision"], "approve")
         self.assertEqual(package["human_review"]["reviewer"], review.reviewer)
 
+    def test_human_review_can_downgrade_approved_recommendation(self) -> None:
+        package = self.workflow.process(
+            self.application,
+            human_review=HumanReviewOutcome(
+                reviewer="underwriting.manager@example.com",
+                decision="manual_review",
+                notes="Escalating for additional checks.",
+            ),
+        )
+
+        self.assertEqual(package["agent_recommendation"], "approve")
+        self.assertEqual(package["final_decision"], "manual_review")
+
     def test_human_review_cannot_override_decline_to_approval(self) -> None:
         risky_application = LoanApplication(
             customer_id="CUST-99",

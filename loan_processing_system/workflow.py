@@ -310,4 +310,10 @@ class LoanProcessingWorkflow:
             )
         if recommended_decision == "decline" and normalized_decision != "decline":
             raise ValueError("Human review cannot override a workflow decline.")
+        if recommended_decision == "approve":
+            if normalized_decision in {"decline", "manual_review"}:
+                return normalized_decision
+            return "approve"
+        if recommended_decision == "manual_review":
+            return normalized_decision
         return normalized_decision
