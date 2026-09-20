@@ -230,6 +230,9 @@ class ComplianceReviewAgent:
 
 
 class LoanProcessingWorkflow:
+    allowed_final_decisions = {"approve", "decline", "manual_review"}
+    decision_aliases = {"approved": "approve", "denied": "decline", "rejected": "decline"}
+
     def __init__(self) -> None:
         self.customer_information_agent = CustomerInformationCollectionAgent(DataRetrievalTool())
         self.document_verification_agent = DocumentVerificationAgent(DocumentProcessingTool())
@@ -286,7 +289,15 @@ class LoanProcessingWorkflow:
     ) -> str:
         if human_review is None:
             return "pending_human_review"
-        normalized_decision = human_review.decision.lower()
-        if recommended_decision == "decline" and normalized_decision == "approved":
+        normalized_decision = human_review.decision.strip().lower()
+        normalized_decision = LoanProcessingWorkflow.decision_aliases.get(
+            normalized_decision,
+            normalized_decision,
+        )
+        if normalized_decision not in LoanProcessingWorkflow.allowed_final_decisions:
+            raise ValueError(
+                "Human review decision must be one of: approve, decline, manual_review."
+            )
+        if recommended_decision == "decline" and normalized_decision == "approve":
             raise ValueError("Human review cannot override a workflow decline with approval.")
         return normalized_decision

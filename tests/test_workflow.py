@@ -74,7 +74,26 @@ class LoanProcessingWorkflowTests(unittest.TestCase):
                 risky_application,
                 human_review=HumanReviewOutcome(
                     reviewer="compliance.lead@example.com",
+                    decision="approve",
+                ),
+            )
+
+        with self.assertRaisesRegex(ValueError, "cannot override a workflow decline"):
+            self.workflow.process(
+                risky_application,
+                human_review=HumanReviewOutcome(
+                    reviewer="compliance.lead@example.com",
                     decision="approved",
+                ),
+            )
+
+    def test_human_review_rejects_unknown_decision_values(self) -> None:
+        with self.assertRaisesRegex(ValueError, "must be one of"):
+            self.workflow.process(
+                self.application,
+                human_review=HumanReviewOutcome(
+                    reviewer="underwriting.manager@example.com",
+                    decision="hold",
                 ),
             )
 
