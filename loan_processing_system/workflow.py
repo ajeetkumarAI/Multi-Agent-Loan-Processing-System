@@ -293,6 +293,7 @@ class LoanProcessingWorkflow:
             return "approve"
         return "manual_review"
 
+    @staticmethod
     def resolve_final_decision(
         recommended_decision: str,
         human_review: HumanReviewOutcome | None,
