@@ -45,14 +45,38 @@ class LoanProcessingWorkflowTests(unittest.TestCase):
     def test_human_review_can_finalize_decision_package(self) -> None:
         review = HumanReviewOutcome(
             reviewer="underwriting.manager@example.com",
-            decision="approved",
+            decision="approve",
             notes="Verified income and supporting documents.",
         )
 
         package = self.workflow.process(self.application, human_review=review)
 
-        self.assertEqual(package["final_decision"], "approved")
+        self.assertEqual(package["final_decision"], "approve")
         self.assertEqual(package["human_review"]["reviewer"], review.reviewer)
+
+    def test_human_review_cannot_override_decline_to_approval(self) -> None:
+        risky_application = LoanApplication(
+            customer_id="CUST-99",
+            name="Casey Compliance",
+            email="casey@example.com",
+            annual_income=50000,
+            monthly_debt=1500,
+            loan_amount=30000,
+            loan_term_months=24,
+            purpose="expansion",
+            documents=["government_id", "pay_stub"],
+            credit_score=605,
+            sanctions_hit=True,
+        )
+
+        with self.assertRaisesRegex(ValueError, "cannot override a workflow decline"):
+            self.workflow.process(
+                risky_application,
+                human_review=HumanReviewOutcome(
+                    reviewer="compliance.lead@example.com",
+                    decision="approved",
+                ),
+            )
 
     def test_missing_documents_and_high_risk_trigger_manual_review(self) -> None:
         application = LoanApplication(

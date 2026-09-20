@@ -25,13 +25,11 @@ The implementation uses specialized agents that run in order:
 ## Run the demo
 
 ```bash
-cd /home/runner/work/Multi-Agent-Loan-Processing-System/Multi-Agent-Loan-Processing-System
 python -m loan_processing_system
 ```
 
 ## Run tests
 
 ```bash
-cd /home/runner/work/Multi-Agent-Loan-Processing-System/Multi-Agent-Loan-Processing-System
 python -m unittest discover -s tests -p 'test*.py'
 ```

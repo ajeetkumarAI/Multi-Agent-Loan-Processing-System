@@ -107,7 +107,7 @@ class DecisionPackageGeneratorTool:
         recommended_decision: str,
         human_review: HumanReviewOutcome | None,
     ) -> dict[str, Any]:
-        decision = human_review.decision if human_review else "pending_human_review"
+        decision = LoanProcessingWorkflow.resolve_final_decision(recommended_decision, human_review)
         return {
             "application": asdict(application),
             "agent_results": [asdict(result) for result in agent_results],
@@ -278,3 +278,15 @@ class LoanProcessingWorkflow:
         if underwriting_recommendation == "approve" and risk_tier in {"low", "moderate"}:
             return "approve"
         return "manual_review"
+
+    @staticmethod
+    def resolve_final_decision(
+        recommended_decision: str,
+        human_review: HumanReviewOutcome | None,
+    ) -> str:
+        if human_review is None:
+            return "pending_human_review"
+        normalized_decision = human_review.decision.lower()
+        if recommended_decision == "decline" and normalized_decision == "approved":
+            raise ValueError("Human review cannot override a workflow decline with approval.")
+        return normalized_decision
