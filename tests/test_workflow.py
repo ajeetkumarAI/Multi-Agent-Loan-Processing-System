@@ -1,6 +1,7 @@
 import unittest
 
 from loan_processing_system import HumanReviewOutcome, LoanApplication, LoanProcessingWorkflow
+from loan_processing_system.workflow import FinancialCalculationTool
 
 
 class LoanProcessingWorkflowTests(unittest.TestCase):
@@ -74,6 +75,15 @@ class LoanProcessingWorkflowTests(unittest.TestCase):
                 risky_application,
                 human_review=HumanReviewOutcome(
                     reviewer="compliance.lead@example.com",
+                    decision="manual_review",
+                ),
+            )
+
+        with self.assertRaisesRegex(ValueError, "cannot override a workflow decline"):
+            self.workflow.process(
+                risky_application,
+                human_review=HumanReviewOutcome(
+                    reviewer="compliance.lead@example.com",
                     decision="approve",
                 ),
             )
@@ -120,6 +130,40 @@ class LoanProcessingWorkflowTests(unittest.TestCase):
         self.assertGreater(results["financial_analysis"]["findings"]["debt_to_income_ratio"], 0.45)
         self.assertEqual(results["risk_assessment"]["findings"]["risk_tier"], "high")
         self.assertIn("missing_customer_consent", results["compliance_review"]["findings"]["issues"])
+
+    def test_document_verification_requires_identity_check(self) -> None:
+        package = self.workflow.process(
+            LoanApplication(
+                customer_id="CUST-55",
+                name="Pat Identity",
+                email="pat@example.com",
+                annual_income=90000,
+                monthly_debt=1000,
+                loan_amount=10000,
+                loan_term_months=24,
+                purpose="medical",
+                documents=["government_id", "pay_stub", "bank_statement"],
+                credit_score=720,
+                id_verified=False,
+            )
+        )
+
+        results = {result["agent_name"]: result for result in package["agent_results"]}
+        self.assertFalse(results["document_verification"]["findings"]["identity_verified"])
+        self.assertFalse(results["document_verification"]["findings"]["all_documents_verified"])
+        self.assertEqual(results["underwriting"]["recommendation"], "manual_review")
+
+    def test_financial_calculation_handles_zero_income_and_non_positive_term(self) -> None:
+        analysis = FinancialCalculationTool().analyze(
+            annual_income=0,
+            monthly_debt=500,
+            loan_amount=12000,
+            loan_term_months=0,
+        )
+
+        self.assertEqual(analysis["monthly_income"], 0.0)
+        self.assertEqual(analysis["estimated_payment"], 12000.0)
+        self.assertEqual(analysis["debt_to_income_ratio"], 1.0)
 
 
 if __name__ == "__main__":
