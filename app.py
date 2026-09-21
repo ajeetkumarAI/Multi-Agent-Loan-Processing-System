@@ -76,7 +76,10 @@ def reset_application() -> None:
         "employment_length",
         "loan_purpose",
         "prior_default",
-        "supporting_documents",
+        "document_identity_proof",
+        "document_income_document",
+        "document_bank_statement",
+        "document_credit_report",
     ):
         st.session_state.pop(key, None)
 
@@ -108,13 +111,23 @@ def main() -> None:
         employment = st.number_input("Employment length (years)", min_value=0.0, value=5.0, step=0.5, key="employment_length")
         loan_default = st.selectbox("Prior loan default", ["no", "yes"], key="prior_default")
 
-    uploaded = st.file_uploader(
-        "Supporting documents",
-        type=["pdf", "txt"],
-        accept_multiple_files=True,
-        help="Upload identity, income, bank, or credit documents.",
-        key="supporting_documents",
-    )
+    st.markdown("**Supporting documents by category**")
+    document_columns = st.columns(4)
+    document_uploads: dict[str, list] = {}
+    document_labels = {
+        "identity_proof": "Identity proof",
+        "income_document": "Income proof",
+        "bank_statement": "Bank statement",
+        "credit_report": "Credit report",
+    }
+    for column, (document_type, label) in zip(document_columns, document_labels.items()):
+        with column:
+            document_uploads[document_type] = st.file_uploader(
+                label,
+                type=["pdf", "txt"],
+                accept_multiple_files=False,
+                key=f"document_{document_type}",
+            )
     action_row = st.columns([1, 1, 3])
     with action_row[0]:
         process = st.button("Run loan review", type="primary", use_container_width=True)
@@ -182,9 +195,9 @@ def main() -> None:
         store_user_info(user)
         with tempfile.TemporaryDirectory() as temp_dir:
             files: dict[str, dict[str, str]] = {}
-            document_types = ["identity_proof", "income_document", "bank_statement", "credit_report"]
-            for index, document in enumerate(uploaded or []):
-                document_type = document_types[index] if index < len(document_types) else "credit_report"
+            for document_type, document in document_uploads.items():
+                if document is None:
+                    continue
                 path = Path(temp_dir) / document.name
                 path.write_bytes(document.getvalue())
                 files[document_type] = {

@@ -53,13 +53,24 @@ def upload_file(files: dict[str, dict[str, str]] | None = None) -> str:
 
 
 def _extract_pdf_text(content: bytes) -> str:
-    reader = PyPDF2.PdfReader(io.BytesIO(content))
-    return "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+    try:
+        reader = PyPDF2.PdfReader(io.BytesIO(content))
+        return "\n".join(page.extract_text() or "" for page in reader.pages).strip()
+    except Exception as error:
+        return f"Error extracting PDF text: {error}"
 
 
 def fetch_documents_from_session(user_email: str) -> dict[str, Any]:
     """Fetch all uploaded documents and extract text for an applicant."""
-    documents = SESSION_STORAGE["documents"].get(user_email, {})
+    if user_email not in SESSION_STORAGE["documents"]:
+        return {
+            "status": "no_documents",
+            "user_email": user_email,
+            "message": "No documents found for this user in session memory.",
+            "documents": {},
+            "document_count": 0,
+        }
+    documents = SESSION_STORAGE["documents"][user_email]
     processed: dict[str, Any] = {}
     for document_type, document in documents.items():
         filename = document["filename"]
@@ -67,7 +78,10 @@ def fetch_documents_from_session(user_email: str) -> dict[str, Any]:
         if filename.lower().endswith(".pdf"):
             text = _extract_pdf_text(content)
         else:
-            text = content.decode("utf-8", errors="replace")
+            try:
+                text = content.decode("utf-8")
+            except UnicodeDecodeError:
+                text = "Binary file - text extraction not supported"
         processed[document_type] = {
             "filename": filename,
             "text_content": text,

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import secrets
 
 def simulate_credit_bureau_data(user_email: str) -> str:
     """Generate deterministic-shaped demo credit data for an applicant."""
@@ -10,7 +9,7 @@ def simulate_credit_bureau_data(user_email: str) -> str:
         "credit_score": 580 + seed % 271,
         "credit_utilization": 10 + seed % 81,
         "late_payments_12m": seed % 3,
-        "monthly_debt_payments": 200 + secrets.randbelow(1801),
+        "monthly_debt_payments": 200 + (seed * 17) % 1801,
     })
 
 

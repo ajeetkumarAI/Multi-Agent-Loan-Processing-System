@@ -11,6 +11,7 @@ from loan_processing_system.tools import (
     fetch_documents_from_session,
     fetch_user_from_session,
     get_loan_sop,
+    simulate_credit_bureau_data,
     store_user_info,
 )
 
@@ -53,6 +54,16 @@ class AgnoLoanProcessingTests(unittest.TestCase):
         self.assertNotEqual(student_sop["required_documents"], business_sop["required_documents"])
         self.assertIn("enrollment", " ".join(student_sop["checks"]).lower())
         self.assertIn("business", " ".join(business_sop["checks"]).lower())
+
+    def test_credit_simulation_is_repeatable(self) -> None:
+        self.assertEqual(
+            simulate_credit_bureau_data("jamie@example.com"),
+            simulate_credit_bureau_data("jamie@example.com"),
+        )
+
+    def test_missing_documents_have_explicit_status(self) -> None:
+        result = fetch_documents_from_session("missing@example.com")
+        self.assertEqual(result["status"], "no_documents")
 
 
 if __name__ == "__main__":
