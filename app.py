@@ -11,6 +11,7 @@ from loan_processing_system.__main__ import build_loan_assistant
 from loan_processing_system.tools import (
     clear_session_storage,
     fetch_documents_from_session,
+    get_loan_sop,
     get_session_status,
     store_user_info,
     upload_file,
@@ -142,6 +143,8 @@ def main() -> None:
             st.write(f"**Employment:** {saved_application['employment_length']} years")
             st.write(f"**Purpose:** {saved_application['loan_intent']}")
             st.write(f"**Prior default:** {saved_application['loan_default']}")
+        with st.expander("Applicable loan SOP", expanded=True):
+            st.json(get_loan_sop(saved_application["loan_intent"]))
     else:
         st.subheader("Current application")
         current_left, current_right = st.columns(2)
@@ -155,6 +158,8 @@ def main() -> None:
             st.write(f"**Employment:** {employment} years")
             st.write(f"**Purpose:** {purpose}")
             st.write(f"**Prior default:** {loan_default}")
+        with st.expander("Applicable loan SOP", expanded=True):
+            st.json(get_loan_sop(purpose))
 
     if process:
         if not name.strip() or not email.strip():
@@ -193,7 +198,8 @@ def main() -> None:
                 "First run concierge, then document verification, processing, and compliance. "
                 "Prepare a concise human-review package with findings, risks, missing items, "
                 "and a preliminary recommendation. The exact submitted application is: "
-                f"{json.dumps(user)}. Do not clear or overwrite session storage."
+                f"{json.dumps(user)}. Apply this category-specific SOP: "
+                f"{json.dumps(get_loan_sop(purpose))}. Do not clear or overwrite session storage."
             )
             with st.status("Running the four-agent review...", expanded=True) as review_status:
                 response = build_loan_assistant().run(prompt)

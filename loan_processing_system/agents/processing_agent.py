@@ -6,6 +6,7 @@ from ..tools import (
     calculate_underwriting_metrics,
     fetch_documents_from_session,
     fetch_user_from_session,
+    get_loan_sop,
     simulate_credit_bureau_data,
 )
 
@@ -18,7 +19,7 @@ PROCESSING_AGENT_PROMPT = """You are the financial processing agent. Fetch user 
 processing_assistant = Agent(
     instructions=PROCESSING_AGENT_PROMPT,
     tools=[fetch_user_from_session, fetch_documents_from_session,
-           simulate_credit_bureau_data, calculate_underwriting_metrics],
+            simulate_credit_bureau_data, calculate_underwriting_metrics, get_loan_sop],
     name="Processing Agent",
     model=model,
 )

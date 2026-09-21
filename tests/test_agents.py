@@ -10,6 +10,7 @@ from loan_processing_system.tools import (
     clear_session_storage,
     fetch_documents_from_session,
     fetch_user_from_session,
+    get_loan_sop,
     store_user_info,
 )
 
@@ -42,6 +43,16 @@ class AgnoLoanProcessingTests(unittest.TestCase):
             "Jamie Borrower",
         )
         self.assertEqual(fetch_documents_from_session("jamie@example.com")["document_count"], 0)
+
+    def test_loan_categories_use_different_sops(self) -> None:
+        student_sop = get_loan_sop("education")
+        business_sop = get_loan_sop("small business")
+
+        self.assertEqual(student_sop["category"], "education")
+        self.assertEqual(business_sop["category"], "small_business")
+        self.assertNotEqual(student_sop["required_documents"], business_sop["required_documents"])
+        self.assertIn("enrollment", " ".join(student_sop["checks"]).lower())
+        self.assertIn("business", " ".join(business_sop["checks"]).lower())
 
 
 if __name__ == "__main__":

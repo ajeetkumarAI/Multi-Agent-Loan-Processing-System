@@ -2,6 +2,7 @@ from agno.agent import Agent
 from agno.models.openai import OpenAIChat
 
 from config import AgentConfig
+from ..tools import get_loan_sop
 
 
 config = AgentConfig()
@@ -11,7 +12,7 @@ COMPLIANCE_AGENT_PROMPT = """You are a compliance and human-review agent. Consol
 
 compliance_assistant = Agent(
     instructions=COMPLIANCE_AGENT_PROMPT,
-    tools=[],
+    tools=[get_loan_sop],
     name="Compliance Agent",
     model=model,
 )

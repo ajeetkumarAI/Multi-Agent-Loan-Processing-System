@@ -41,6 +41,9 @@ A lightweight Agno-based multi-agent loan processing system organized around fou
   documents, and extract text from uploaded PDFs.
 - **`loan_processing_system/tools/financial_tools.py`** — credit bureau
   simulation and underwriting/DTI/risk-score calculations.
+- **`loan_processing_system/tools/sop_tools.py`** — category-specific standard
+  operating procedures for student, business, home-improvement,
+  debt-consolidation, medical, education, and other personal loans.
 - **`config.py`** — `AgentConfig` reads `MODEL_ID`, `TEMPERATURE`, and
   `TOP_P` from the environment for the OpenAI model used by every agent.
 
@@ -124,6 +127,29 @@ not issue an autonomous final approval or decline. The final decision belongs
 to a qualified human reviewer after reviewing the agent findings and required
 supporting documents.
 
+### Category-Specific SOPs
+
+The selected loan purpose determines the SOP used by the Processing and
+Compliance agents. The SOP is returned by `get_loan_sop()` and contains:
+
+- Required documents for that loan category
+- Category-specific verification and underwriting checks
+- The main decision focus for the human reviewer
+
+Examples:
+
+| Loan category | SOP emphasis |
+| --- | --- |
+| Student or education loan | Enrollment/admission, eligible education costs, borrower or co-signer affordability |
+| Business or small-business loan | Business registration, ownership, revenue, cash flow, and use of funds |
+| Home improvement loan | Property authorization, contractor estimate, project purpose, and affordability |
+| Debt consolidation loan | Creditor statements, payoff amounts, post-loan DTI, and controlled use of funds |
+| Medical loan | Provider estimate, medical expense verification, and affordability |
+
+The active SOP is shown in the Streamlit interface before review and is also
+included in the supervisor prompt so the agents use the selected loan-category
+procedure instead of a generic checklist.
+
 ## Workflow
 
 The implementation uses specialized agents that run in order:
@@ -170,7 +196,8 @@ Multi-Agent-Loan-Processing-System/
 │   └── tools/
 │       ├── __init__.py                 # Tool exports
 │       ├── storage_tools.py             # Applicant/document session storage
-│       └── financial_tools.py           # Credit and underwriting calculations
+│       ├── financial_tools.py           # Credit and underwriting calculations
+│       └── sop_tools.py                 # Category-specific loan SOPs
 └── tests/
   ├── __init__.py
   └── test_agents.py                  # Agent and storage tests
