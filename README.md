@@ -143,11 +143,43 @@ The implementation uses specialized agents that run in order:
 ## Project structure
 
 ```text
-loan_processing_system/
-├── agents/                         # Concierge, verification, processing, compliance
-└── tools/                          # Session storage and financial tools
-config.py                           # Agno model configuration
+Multi-Agent-Loan-Processing-System/
+├── app.py                              # Streamlit application UI
+├── config.py                           # Agno/OpenAI model configuration
+├── requirements.txt                    # Python dependencies
+├── LICENSE                             # Project license
+├── README.md                           # Project documentation
+├── .streamlit/
+│   └── config.toml                     # Light Streamlit theme configuration
+├── assets/
+│   ├── app_ui_1.png                    # Intake and application UI
+│   ├── app_ui_2.png                    # Agent workflow output
+│   ├── app_ui_3.png                    # Review package output
+│   ├── app_ui_4.png                    # Document verification output
+│   ├── app_ui_5.png                    # Compliance review output
+│   └── app_ui_6.png                    # Missing-items and next-steps output
+├── loan_processing_system/
+│   ├── __init__.py                     # Public package exports
+│   ├── __main__.py                     # LoanAssist supervisor entry point
+│   ├── agents/
+│   │   ├── __init__.py                 # Specialist agent exports
+│   │   ├── concierge_agent.py          # Concierge Agent
+│   │   ├── document_verification_agent.py
+│   │   ├── processing_agent.py          # Financial processing Agent
+│   │   └── compliance_agent.py          # Human-review Agent
+│   └── tools/
+│       ├── __init__.py                 # Tool exports
+│       ├── storage_tools.py             # Applicant/document session storage
+│       └── financial_tools.py           # Credit and underwriting calculations
+└── tests/
+  ├── __init__.py
+  └── test_agents.py                  # Agent and storage tests
 ```
+
+The `agents/` directory contains the four specialist Agno agents. The
+`tools/` directory contains the functions exposed to those agents. The
+Streamlit UI calls the supervisor from `__main__.py`, while the supervisor
+delegates the application through the specialist agents in order.
 
 ## Run the demo
 
@@ -171,6 +203,24 @@ The app provides application intake, document upload, session status, agent proc
 python -m unittest discover -s tests -p 'test*.py'
 ```
 
-## Application Screenshot
+## Application Screenshots
 
-![LoanAssist human-review package](assets/app_ui_6.png)
+The screenshots below show the application intake, agent handoffs, and final
+human-review output. They are kept in the repository under `assets/` so the
+README renders them directly from the project.
+
+### Intake and Workflow
+
+![LoanAssist application intake](assets/app_ui_1.png)
+
+![LoanAssist workflow](assets/app_ui_2.png)
+
+![LoanAssist processing output](assets/app_ui_3.png)
+
+### Verification and Review
+
+![LoanAssist document verification](assets/app_ui_4.png)
+
+![LoanAssist compliance review](assets/app_ui_5.png)
+
+![LoanAssist human-review missing items](assets/app_ui_6.png)
