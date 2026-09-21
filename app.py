@@ -41,7 +41,7 @@ st.markdown(
     [data-testid="stSidebar"] { background: #e6efe8; border-right: 1px solid var(--line); }
     .hero { padding: 1.4rem 0 1.8rem; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
     .eyebrow { color: var(--green); font-size: .75rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-    .hero h1 { color: var(--ink); font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1; margin: .45rem 0 .7rem; }
+    .hero-title { color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1; margin: .45rem 0 .7rem; font-weight: 700; }
     .hero p { color: var(--muted); max-width: 680px; font-size: 1.02rem; }
     .metric { background: white; border: 1px solid var(--line); padding: 1rem; border-radius: 8px; }
     .metric-label { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; }
@@ -88,8 +88,8 @@ def main() -> None:
         store_user_info(saved_application)
 
     st.markdown(
-        '<div class="hero"><div class="eyebrow">LoanAssist / Agno multi-agent review</div>'
-        '<h1>Process with clarity.</h1>'
+        '<div class="hero"><div class="eyebrow">Agno multi-agent workflow</div>'
+        '<div class="hero-title">LoanAssist: Multi-Agent Loan Review</div>'
         '<p>Move one application through concierge intake, document verification, financial processing, and compliance review.</p></div>',
         unsafe_allow_html=True,
     )
