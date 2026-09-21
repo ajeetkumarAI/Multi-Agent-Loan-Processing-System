@@ -4,29 +4,37 @@ A lightweight Agno-based multi-agent loan processing system organized around fou
 
 ## Architecture
 
-```text
-                 ┌────────────────────────┐
-                 │   LoanAssist (Agno     │
-                 │   supervisor Agent)    │
-                 └───────────┬────────────┘
-                             │ delegates in order
-         ┌───────────────────┼───────────────────┬───────────────────┐
-         ▼                   ▼                   ▼                   ▼
-  ┌─────────────┐   ┌──────────────────┐   ┌─────────────┐   ┌─────────────┐
-  │  Concierge  │   │Document           │   │ Processing  │   │ Compliance  │
-  │  Agent      │──▶│Verification Agent │──▶│ Agent       │──▶│ Agent       │
-  └──────┬──────┘   └─────────┬─────────┘   └──────┬──────┘   └──────┬──────┘
-         │                    │                     │                 │
-         ▼                    ▼                     ▼                 ▼
-  store_user_info,     fetch_documents_from_  simulate_credit_    (review-only,
-  upload_file          session,                bureau_data,        no tools)
-                        fetch_user_from_        calculate_
-                        session                 underwriting_metrics
-                             │
-                             ▼
-                    in-memory SESSION_STORAGE
-                    (users, documents)
+```mermaid
+flowchart TD
+    UI[Streamlit application intake] --> SUP[LoanAssist supervisor<br/>Agno Agent]
+
+    SUP -->|1. delegate| CON[Concierge Agent]
+    CON -->|2. handoff| DOC[Document Verification Agent]
+    DOC -->|3. handoff| PROC[Processing Agent]
+    PROC -->|4. handoff| COMP[Compliance Agent]
+    COMP --> REVIEW[Human-review package]
+
+    CON --> CONTOOLS[store_user_info<br/>upload_file]
+    DOC --> DOCTOOLS[fetch_user_from_session<br/>fetch_documents_from_session]
+    PROC --> PROCTOOLS[simulate_credit_bureau_data<br/>calculate_underwriting_metrics<br/>get_loan_sop]
+    COMP -->|review only| NONE[No tools]
+
+    CONTOOLS --> STORE[(SESSION_STORAGE<br/>users + documents)]
+    DOCTOOLS --> STORE
+    PROCTOOLS --> STORE
+
+    classDef agent fill:#d7f2df,stroke:#2c7656,color:#18201f,stroke-width:2px;
+    classDef tool fill:#eef3ef,stroke:#65716d,color:#18201f;
+    classDef output fill:#fff4d6,stroke:#b7791f,color:#18201f;
+    class SUP,CON,DOC,PROC,COMP agent;
+    class CONTOOLS,DOCTOOLS,PROCTOOLS,NONE,STORE tool;
+    class UI,REVIEW output;
 ```
+
+The supervisor delegates the application in order. Each specialist agent has
+its own scoped tools, while the storage and processing tools share the same
+session data. Compliance is intentionally review-only and produces the final
+package for a human decision-maker.
 
 - **`app.py`** — Streamlit UI for application intake, document upload, and
   triggering the review; renders the human-review package.
