@@ -7,7 +7,7 @@ from .storage_tools import (
     store_user_info,
     upload_file,
 )
-from .sop_tools import get_loan_sop
+from .sop_tools import build_customer_document_request, evaluate_sop_documents, get_loan_sop
 
 __all__ = [
     "calculate_underwriting_metrics", "simulate_credit_bureau_data",
@@ -15,4 +15,6 @@ __all__ = [
     "fetch_user_from_session", "get_session_status", "store_user_info",
     "upload_file",
     "get_loan_sop",
+    "evaluate_sop_documents",
+    "build_customer_document_request",
 ]

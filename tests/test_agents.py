@@ -10,6 +10,8 @@ from loan_processing_system.tools import (
     clear_session_storage,
     fetch_documents_from_session,
     fetch_user_from_session,
+    build_customer_document_request,
+    evaluate_sop_documents,
     get_loan_sop,
     simulate_credit_bureau_data,
     store_user_info,
@@ -64,6 +66,14 @@ class AgnoLoanProcessingTests(unittest.TestCase):
     def test_missing_documents_have_explicit_status(self) -> None:
         result = fetch_documents_from_session("missing@example.com")
         self.assertEqual(result["status"], "no_documents")
+
+    def test_sop_gate_returns_missing_items_and_customer_request(self) -> None:
+        check = evaluate_sop_documents("home improvement", ["identity_proof", "income_document"])
+        request = build_customer_document_request("jamie@example.com", "app-1", check)
+
+        self.assertEqual(check["status"], "missing")
+        self.assertIn("contractor estimate or project quote", check["missing_items"])
+        self.assertEqual(request["request_key"], "app-1:home_improvement:documents")
 
 
 if __name__ == "__main__":

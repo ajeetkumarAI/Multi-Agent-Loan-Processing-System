@@ -10,6 +10,8 @@ import streamlit as st
 from loan_processing_system.__main__ import build_loan_assistant
 from loan_processing_system.tools import (
     clear_session_storage,
+    build_customer_document_request,
+    evaluate_sop_documents,
     fetch_documents_from_session,
     get_loan_sop,
     get_session_status,
@@ -206,13 +208,18 @@ def main() -> None:
                     "user_email": email.strip(),
                 }
             upload_file(files)
+            sop_check = evaluate_sop_documents(purpose, list(files))
+            customer_request = build_customer_document_request(
+                email.strip(), email.strip(), sop_check
+            )
             prompt = (
                 f"Process the stored loan application for {email.strip()} through all four agents. "
                 "First run concierge, then document verification, processing, and compliance. "
                 "Prepare a concise human-review package with findings, risks, missing items, "
                 "and a preliminary recommendation. The exact submitted application is: "
                 f"{json.dumps(user)}. Apply this category-specific SOP: "
-                f"{json.dumps(get_loan_sop(purpose))}. Do not clear or overwrite session storage."
+                f"{json.dumps(get_loan_sop(purpose))}. The deterministic SOP pre-check is: "
+                f"{json.dumps(sop_check)}. Do not clear or overwrite session storage."
             )
             with st.status("Running the four-agent review...", expanded=True) as review_status:
                 response = build_loan_assistant().run(prompt)
@@ -228,7 +235,15 @@ def main() -> None:
                 f"- **Employment:** {user['employment_length']} years\n"
                 f"- **Purpose:** {user['loan_intent']}\n"
                 f"- **Prior default:** {user['loan_default']}\n\n"
-                "### Agent assessment\n\n"
+                "### SOP pre-check\n\n"
+                f"```json\n{json.dumps(sop_check, indent=2)}\n```\n\n"
+                + (
+                    "### Customer document request\n\n"
+                    f"```json\n{json.dumps(customer_request, indent=2)}\n```\n\n"
+                    if customer_request
+                    else ""
+                )
+                + "### Agent assessment\n\n"
                 f"{agent_review}"
             )
         st.rerun()

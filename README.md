@@ -16,18 +16,18 @@ unnecessary back-and-forth with applicants.
 
 ```mermaid
 flowchart LR
-  REQUEST[Applicant request<br/>loan purpose + details] --> SUP[LoanAssist<br/>supervisor agent]
-  SUP --> ROUTER[Loan category router<br/>get_loan_sop()]
-  ROUTER --> STUDENT[Student / education SOP]
-  ROUTER --> BUSINESS[Business SOP]
-  ROUTER --> HOME[Home improvement SOP]
-  ROUTER --> OTHER[Medical / debt consolidation / personal SOP]
+  REQUEST["Applicant request<br/>loan purpose + details"] --> SUP["LoanAssist<br/>supervisor agent"]
+  SUP --> ROUTER["Loan category router<br/>get_loan_sop()"]
+  ROUTER --> STUDENT["Student / education SOP"]
+  ROUTER --> BUSINESS["Business SOP"]
+  ROUTER --> HOME["Home improvement SOP"]
+  ROUTER --> OTHER["Medical / debt consolidation / personal SOP"]
 
-  STUDENT --> AGENTS[Relevant agents + tools]
+  STUDENT --> AGENTS["Relevant agents + tools"]
   BUSINESS --> AGENTS
   HOME --> AGENTS
   OTHER --> AGENTS
-  AGENTS --> PACKAGE[Category-aware human-review package]
+  AGENTS --> PACKAGE["Category-aware human-review package"]
 ```
 
 ### Business Value
@@ -45,7 +45,7 @@ The complete business case is documented in
 
 ```mermaid
 flowchart TD
-    UI[Streamlit application intake] --> SUP[LoanAssist supervisor<br/>Agno Agent]
+    UI[application intake] --> SUP[LoanAssist supervisor<br/>Agno Agent]
 
     SUP -->|1. delegate| CON[Concierge Agent]
     CON -->|2. handoff| DOC[Document Verification Agent]
@@ -267,9 +267,159 @@ control of the final decision.
 
 **Implementation status:** the current codebase implements items 1–4 in a
 simplified form (web form + PDF/text upload, category-specific SOP, and
-document verification) and produces a single combined recommendation instead
-of separate Income/Credit/Appraisal agents. The Notification Agent, parallel
-specialist agents, and dashboard are documented here as the next milestones.
+document verification), runs a deterministic SOP pre-check, and produces a
+structured missing-document request before the single combined recommendation.
+Separate Income/Credit/Appraisal agents, outbound email delivery, and the
+dashboard are documented here as the next milestones.
+
+### Source-Specific Processing Architectures
+
+Different input sources need different ingestion and extraction steps. They
+converge only after the application and evidence have been normalized into a
+common structure.
+
+#### 1. Web Form Input
+
+Use this path when the applicant enters the application directly in the
+product interface.
+
+```mermaid
+flowchart LR
+  FORM["Applicant web form<br/>identity + loan + income details"]
+  VALIDATE["Field validation<br/>required fields + formats"]
+  PROFILE["Normalized applicant profile"]
+  SOP["Loan category and SOP resolver"]
+  AGENTS["Agent orchestration"]
+  REVIEW["Human-review package"]
+
+  FORM --> VALIDATE --> PROFILE --> SOP --> AGENTS --> REVIEW
+```
+
+The form is already structured, so this path does not require OCR. The main
+checks are required fields, valid formats, category selection, numeric ranges,
+and duplicate application detection. Supporting documents can be added after
+the profile is created.
+
+#### 2. PDF Application or Supporting Document
+
+Use this path for digital PDFs such as application forms, payslips, bank
+statements, credit reports, invoices, or appraisal reports.
+
+```mermaid
+flowchart LR
+  PDF["PDF upload"]
+  STORE["Immutable file storage<br/>hash + metadata"]
+  TYPE["Document classification"]
+  TEXT["PDF text and layout extraction"]
+  FIELDS["Structured fields + evidence references"]
+  SOP["SOP document checks"]
+  AGENTS["Relevant agents"]
+  REVIEW["Human-review package"]
+
+  PDF --> STORE --> TYPE --> TEXT --> FIELDS --> SOP --> AGENTS --> REVIEW
+```
+
+Digital PDFs can usually be processed with text and layout extraction. The
+system should retain page numbers and source text for every extracted value so
+a reviewer can verify income, debt, identity, or loan-purpose evidence.
+
+#### 3. DOCX Application or Business Document
+
+Use this path for editable application forms, business plans, financial
+statements, employment letters, or other DOCX files.
+
+```mermaid
+flowchart LR
+  DOCX["DOCX upload"]
+  STORE["Immutable file storage<br/>hash + metadata"]
+  PARSE["DOCX parser<br/>paragraphs + tables + headers"]
+  NORMALIZE["Normalize fields and tables"]
+  TYPE["Document type and loan relevance"]
+  SOP["SOP document checks"]
+  AGENTS["Relevant agents"]
+  REVIEW["Human-review package"]
+
+  DOCX --> STORE --> PARSE --> NORMALIZE --> TYPE --> SOP --> AGENTS --> REVIEW
+```
+
+DOCX processing should preserve table structure and section context. A
+business financial statement, for example, should not be flattened into a
+single text blob before revenue and expense fields are extracted.
+
+#### 4. Scanned PDF or Image Input
+
+Use this path for scanned identity documents, photographed payslips, or image
+attachments that do not contain selectable text.
+
+```mermaid
+flowchart LR
+  IMAGE["Scanned PDF or image"]
+  SECURITY["File validation + malware scan"]
+  OCR["OCR and layout detection"]
+  CONFIDENCE["Field confidence and quality checks"]
+  REVIEWFIELDS["Structured fields + page evidence"]
+  MANUAL{ "Confidence above threshold?" }
+  SOP["SOP document checks"]
+  HUMAN["Manual extraction review"]
+  AGENTS["Relevant agents"]
+
+  IMAGE --> SECURITY --> OCR --> CONFIDENCE --> MANUAL
+  MANUAL -->|Yes| REVIEWFIELDS --> SOP --> AGENTS
+  MANUAL -->|No| HUMAN --> REVIEWFIELDS
+```
+
+Low-confidence OCR must not be treated as verified evidence. It should create
+a manual-review task or a customer clarification request.
+
+#### 5. Email, Portal, or Batch Input
+
+Use this path when applications arrive from an existing lending platform,
+email inbox, SFTP folder, or partner portal.
+
+```mermaid
+flowchart LR
+  SOURCE["Email / portal / batch folder"]
+  INGEST["Ingestion adapter"]
+  CORRELATE["Match applicant and application ID"]
+  DEDUPE["Content hash and duplicate check"]
+  QUEUE["Processing queue"]
+  CLASSIFY["Classify and extract documents"]
+  SOP["SOP checks"]
+  AGENTS["Agent orchestration"]
+  DASH["Operations dashboard"]
+
+  SOURCE --> INGEST --> CORRELATE --> DEDUPE --> QUEUE --> CLASSIFY --> SOP --> AGENTS --> DASH
+```
+
+This path needs stronger correlation and idempotency controls because the
+same document may arrive more than once or be associated with an existing
+application. The adapter should acknowledge receipt quickly and let workers
+process the files asynchronously.
+
+#### Common Convergence Point
+
+All source paths converge into the same normalized application and evidence
+contract:
+
+```mermaid
+flowchart TD
+  WEB["Web form"] --> CONTRACT["Normalized application + evidence contract"]
+  PDF["PDF"] --> CONTRACT
+  DOCX["DOCX"] --> CONTRACT
+  IMAGE["Scanned image"] --> CONTRACT
+  PORTAL["Email / portal / batch"] --> CONTRACT
+
+  CONTRACT --> SOP["Category-specific SOP resolver"]
+  SOP --> PRECHECK["SOP pre-check: pass / fail / missing / review"]
+  PRECHECK --> PARALLEL["Parallel specialist agents"]
+  PARALLEL --> UNDERWRITE["Underwriting and risk tools"]
+  UNDERWRITE --> COMPLIANCE["Compliance agent"]
+  COMPLIANCE --> HUMAN["Human-in-the-loop decision"]
+```
+
+The source-specific adapters may differ, but the downstream contract stays
+stable. This prevents the agent layer from needing separate business logic
+for every file format or channel.
 
 ### Category-Specific SOPs
 
@@ -308,6 +458,8 @@ The implementation uses specialized agents that run in order:
 
 - **Storage tools** for customer profile assembly and document verification
 - **Financial tools** for payment, debt-to-income, and risk-tier analysis
+- **SOP tools** for category-specific required-document checks and customer
+  follow-up payloads
 - **Agno Agent supervisor** for coordinating the four specialist agents
 
 ## Project structure

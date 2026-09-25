@@ -138,3 +138,68 @@ def get_loan_sop(loan_purpose: str) -> dict[str, Any]:
         "category": category if category in LOAN_SOPS else "other",
         **LOAN_SOPS.get(category, LOAN_SOPS["other"]),
     }
+
+
+def evaluate_sop_documents(
+    loan_purpose: str,
+    document_types: list[str] | set[str],
+) -> dict[str, Any]:
+    """Return deterministic document checks for the selected loan category."""
+    sop = get_loan_sop(loan_purpose)
+    available = set(document_types)
+    required = {"government-issued identity document", "income verification"}
+    category_requirements = {
+        "education": {"proof of enrollment or admission", "tuition or education-cost statement"},
+        "student_loan": {"proof of enrollment or admission", "tuition invoice or education-cost statement"},
+        "business_loan": {"business registration or license", "business bank statements"},
+        "small_business": {"business registration or license", "business bank statements"},
+        "home_improvement": {"contractor estimate or project quote", "proof of property ownership or authorization"},
+        "debt_consolidation": {"current creditor statements", "authorization or payoff details for consolidated debts"},
+        "medical": {"provider estimate or medical invoice"},
+        "other": {"purpose and use-of-funds statement"},
+    }
+    required.update(category_requirements.get(sop["category"], set()))
+
+    aliases = {
+        "identity_proof": "government-issued identity document",
+        "income_document": "income verification",
+        "bank_statement": "business bank statements",
+        "credit_report": "current creditor statements",
+    }
+    satisfied = {aliases.get(document_type, document_type) for document_type in available}
+    checks = []
+    for requirement in sorted(required):
+        if requirement in satisfied:
+            checks.append({"requirement": requirement, "status": "pass", "reason": "Evidence provided."})
+        else:
+            checks.append({
+                "requirement": requirement,
+                "status": "missing",
+                "reason": f"Required by the {sop['label']} SOP.",
+            })
+    missing = [check["requirement"] for check in checks if check["status"] == "missing"]
+    return {
+        "category": sop["category"],
+        "status": "pass" if not missing else "missing",
+        "checks": checks,
+        "missing_items": missing,
+        "reason": "All required evidence is present." if not missing else "Required evidence is missing.",
+    }
+
+
+def build_customer_document_request(
+    applicant_email: str,
+    application_id: str,
+    sop_check: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Build an idempotent follow-up payload when the SOP gate fails."""
+    if not sop_check["missing_items"]:
+        return None
+    return {
+        "application_id": application_id,
+        "recipient": applicant_email,
+        "status": "open",
+        "request_key": f"{application_id}:{sop_check['category']}:documents",
+        "missing_items": sop_check["missing_items"],
+        "message": "Please provide the missing documents so the loan review can continue.",
+    }
