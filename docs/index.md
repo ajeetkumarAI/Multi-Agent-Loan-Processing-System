@@ -2,7 +2,7 @@
 
 ## Agno Multi-Agent Loan Processing
 
-LoanAssist is a category-aware multi-agent loan review application built with Agno and Streamlit. It moves one application through concierge intake, document verification, financial processing, and compliance review before preparing a package for a qualified human decision-maker.
+LoanAssist is a category-aware multi-agent loan review concept built with Agno. A local demo interface illustrates the workflow: concierge intake, document verification, financial processing, and compliance review before preparing a package for a qualified human decision-maker.
 
 > This system produces a preliminary recommendation. It does not make an autonomous final lending decision.
 
@@ -82,7 +82,7 @@ flowchart TD
   decision, and document pass/fail counts. A reviewer can open any entry for
   full detail and override the decision.
 
-**Implementation status:** the current codebase implements the web/PDF/text
+**Implementation status:** the current codebase implements a local demo for web/PDF/text
 intake, category-specific SOP, and document verification in a simplified,
 single-recommendation form. The Notification Agent, parallel specialist
 agents, and dashboard are the next milestones — see the main
