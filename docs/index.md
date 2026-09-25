@@ -6,7 +6,7 @@ LoanAssist is a category-aware multi-agent loan review concept built with Agno. 
 
 > This system produces a preliminary recommendation. It does not make an autonomous final lending decision.
 
-## Practical End-to-End Workflow
+## Target Production Architecture
 
 This is the target enterprise-style workflow for LoanAssist, inspired by
 intelligent document processing (IDP) and multi-agent loan-automation
@@ -82,14 +82,15 @@ flowchart TD
   decision, and document pass/fail counts. A reviewer can open any entry for
   full detail and override the decision.
 
-**Implementation status:** the current codebase implements a local demo for web/PDF/text
-intake, category-specific SOP, and document verification in a simplified,
-single-recommendation form. The Notification Agent, parallel specialist
-agents, and dashboard are the next milestones — see the main
-[README](../README.md#practical-end-to-end-workflow-extended-design) for full
+**Implementation status:** the current codebase implements a local demo for
+web-form intake, PDF/text upload, in-memory session storage, four Agno agents,
+category-specific SOP checks, and a human-review package. OCR/IDP, DOCX
+parsing, outbound notifications, persistent dashboard storage, and parallel
+specialist agents are target capabilities, not current features. See the main
+[README](../README.md#target-production-architecture-roadmap) for full
 details.
 
-## Current MVP Architecture
+## Current Demo Architecture
 
 ```mermaid
 flowchart TD

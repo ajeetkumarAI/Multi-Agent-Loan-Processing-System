@@ -4,7 +4,7 @@
 
 Create a practical loan-processing platform that accepts structured and unstructured applications, classifies and extracts document data, applies the correct loan-category SOP, runs specialist checks in parallel where possible, and presents a traceable human-review decision package.
 
-## Target Architecture
+## Target Architecture (Roadmap)
 
 ```mermaid
 flowchart TD
@@ -27,7 +27,7 @@ flowchart TD
     SOP --> PRECHECK[SOP Pre-check Agent]
     PRECHECK -->|Missing or failed| FOLLOWUP[Notification Agent]
     FOLLOWUP --> EMAIL[Customer email<br/>missing document / clarification]
-    EMAIL -. resubmission .-> CHANNELS
+    EMAIL -.->|resubmission| CHANNELS
 
     PRECHECK -->|Passed evidence| PARALLEL
     subgraph PARALLEL[Parallel specialist review]

@@ -41,7 +41,7 @@ flowchart LR
 The complete business case is documented in
 [preparation/01-business-case.md](preparation/01-business-case.md).
 
-## Architecture
+## Current Demo Architecture
 
 ```mermaid
 flowchart TD
@@ -94,10 +94,11 @@ package for a human decision-maker.
 - **`config.py`** — `AgentConfig` reads `MODEL_ID`, `TEMPERATURE`, and
   `TOP_P` from the environment for the OpenAI model used by every agent.
 
-Data flows one way: the UI writes the applicant/documents into session
-storage, the supervisor delegates to each specialist agent in sequence, and
-each agent reads from session storage and/or calls its tools before handing
-off to the next stage. No agent can clear session storage during a review.
+The local demo writes the applicant and documents into session storage. The
+supervisor is instructed to invoke the four specialist agents in sequence;
+each agent reads shared session data and uses its scoped tools. No agent can
+clear session storage during a review. This is an orchestration demo, not a
+production workflow engine with guaranteed execution ordering.
 
 ### Runtime Architecture
 
@@ -174,7 +175,7 @@ not issue an autonomous final approval or decline. The final decision belongs
 to a qualified human reviewer after reviewing the agent findings and required
 supporting documents.
 
-### Practical End-to-End Workflow (Extended Design)
+### Target Production Architecture (Roadmap)
 
 The diagram above reflects the current MVP implementation. The design below
 is the target enterprise-style workflow this project is moving toward,
@@ -265,12 +266,13 @@ This design is intended to reduce manual document handling and repeated
 back-and-forth with applicants, while still keeping a human reviewer in
 control of the final decision.
 
-**Implementation status:** the current codebase implements items 1–4 in a
-simplified form (web form + PDF/text upload, category-specific SOP, and
-document verification), runs a deterministic SOP pre-check, and produces a
-structured missing-document request before the single combined recommendation.
-Separate Income/Credit/Appraisal agents, outbound email delivery, and the
-dashboard are documented here as the next milestones.
+**Implementation status:** the current codebase implements a local demo with
+web-form intake, PDF/text upload, in-memory storage, four Agno agents,
+category-specific SOP resolution, a deterministic SOP document pre-check, and
+a human-review package. It does **not** implement DOCX parsing, OCR/IDP,
+malware scanning, immutable file storage, email delivery, a persistent
+dashboard, parallel specialist agents, or a production underwriting decision
+service. Those components are roadmap architecture only.
 
 ### Source-Specific Processing Architectures
 
@@ -358,7 +360,7 @@ flowchart LR
   OCR["OCR and layout detection"]
   CONFIDENCE["Field confidence and quality checks"]
   REVIEWFIELDS["Structured fields + page evidence"]
-  MANUAL{ "Confidence above threshold?" }
+  MANUAL{"Confidence above threshold?"}
   SOP["SOP document checks"]
   HUMAN["Manual extraction review"]
   AGENTS["Relevant agents"]
