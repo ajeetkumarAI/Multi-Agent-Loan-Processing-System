@@ -135,6 +135,103 @@ not issue an autonomous final approval or decline. The final decision belongs
 to a qualified human reviewer after reviewing the agent findings and required
 supporting documents.
 
+### Practical End-to-End Workflow (Extended Design)
+
+The diagram above reflects the current MVP implementation. The design below
+is the target enterprise-style workflow this project is moving toward,
+inspired by intelligent document processing (IDP) and multi-agent
+loan-automation patterns. It is documented here as the roadmap; parts not yet
+implemented in code are noted explicitly.
+
+```mermaid
+flowchart TD
+    subgraph INTAKE[Application intake channels]
+        WEB[Web form:<br/>applicant, loan, income details]
+        PDFUP[PDF upload]
+        DOCXUP[DOCX upload]
+    end
+
+    INTAKE --> CONCIERGE[Concierge Agent]
+    CONCIERGE --> DOCSET
+
+    subgraph DOCSET[Parallel document collection per loan SOP]
+        APPFORM[Application form]
+        PAYSLIP[Payslip / income proof]
+        CREDITRPT[Credit report]
+        APPRAISAL[Appraisal report]
+        OTHERDOC[Other SOP-required documents]
+    end
+
+    DOCSET --> IDP[IDP / iOCR<br/>classification and extraction]
+    IDP --> VIEWS[Extracted data views:<br/>original document, table, markdown, JSON]
+    VIEWS --> SOPCHECK{SOP pre-check<br/>per document and loan category}
+
+    SOPCHECK -->|Fail or missing| NOTIFY[Notification Agent]
+    NOTIFY --> EMAIL[Email customer:<br/>missing documents / clarification]
+    EMAIL -.->|resubmission| INTAKE
+
+    SOPCHECK -->|Pass| SPECIALISTS
+
+    subgraph SPECIALISTS[Parallel specialist agents]
+        INCOME[Income Agent]
+        CREDIT[Credit Agent]
+        APPR[Appraisal Agent]
+    end
+
+    SPECIALISTS --> COMPLIANCE[Compliance Agent]
+    COMPLIANCE --> DECISION[Underwriting decision:<br/>pass / fail with reason + audit trail]
+    DECISION --> DASHBOARD[Main dashboard]
+    DASHBOARD --> HUMAN{Human-in-the-loop review}
+    HUMAN -->|Approve / override| FINAL[Final decision]
+    HUMAN -->|No action needed| FINAL
+
+    classDef intake fill:#eef3ef,stroke:#65716d,color:#18201f;
+    classDef agent fill:#d7f2df,stroke:#2c7656,color:#18201f,stroke-width:2px;
+    classDef check fill:#fff4d6,stroke:#b7791f,color:#18201f;
+    classDef output fill:#f5f3ed,stroke:#18201f,color:#18201f;
+    class WEB,PDFUP,DOCXUP,APPFORM,PAYSLIP,CREDITRPT,APPRAISAL,OTHERDOC intake;
+    class CONCIERGE,IDP,NOTIFY,INCOME,CREDIT,APPR,COMPLIANCE agent;
+    class SOPCHECK,HUMAN check;
+    class VIEWS,EMAIL,DECISION,DASHBOARD,FINAL output;
+```
+
+Key characteristics of this extended design:
+
+1. **Multi-channel intake** — applicants can fill a web form or upload a
+   completed loan application as a PDF or DOCX file.
+2. **Parallel document collection** — the documents required at this stage
+   depend on the loan-category SOP (for example, a payslip and credit report
+   for a personal loan, or an appraisal report for a home loan).
+3. **IDP/iOCR classification and extraction** — documents are classified by
+   type and their data is extracted so it can be reviewed as the **original
+   document**, a **table**, **Markdown**, or **JSON** — not just raw text.
+4. **SOP pre-check** — each extracted document is validated against the
+   loan-category SOP. Every check records a pass/fail result and a reason.
+5. **Automatic customer follow-up** — if a required document is missing or
+   fails validation, a Notification Agent sends the customer an email listing
+   exactly what is missing or needs clarification, instead of stalling
+   silently.
+6. **Parallel specialist agents** — Income, Credit, and Appraisal agents
+   evaluate their areas independently once documents pass the pre-check, then
+   hand off to Compliance for the final consolidated review.
+7. **Underwriting decision with audit trail** — every decision records the
+   pass/fail reason so it can be reviewed later.
+8. **Dashboard and human-in-the-loop** — every processed application appears
+   on a dashboard with applicant details, requested loan amount, creation
+   date, agent decision, number of documents processed, and how many passed
+   or failed the SOP checks. A reviewer can open any entry for full detail
+   and override the decision; otherwise the agent decision is used as-is.
+
+This design is intended to reduce manual document handling and repeated
+back-and-forth with applicants, while still keeping a human reviewer in
+control of the final decision.
+
+**Implementation status:** the current codebase implements items 1–4 in a
+simplified form (web form + PDF/text upload, category-specific SOP, and
+document verification) and produces a single combined recommendation instead
+of separate Income/Credit/Appraisal agents. The Notification Agent, parallel
+specialist agents, and dashboard are documented here as the next milestones.
+
 ### Category-Specific SOPs
 
 The selected loan purpose determines the SOP used by the Processing and
