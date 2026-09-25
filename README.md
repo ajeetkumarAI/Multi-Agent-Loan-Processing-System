@@ -2,6 +2,45 @@
 
 A lightweight Agno-based multi-agent loan processing system organized around four sequential stages: concierge intake, document verification, processing, and compliance review.
 
+## Main Business Case
+
+Different applicants need different loan workflows. A student loan should not
+be validated with the same checklist as a business loan, home-improvement
+loan, medical loan, or debt-consolidation loan.
+
+LoanAssist uses one supervisor agent to understand the applicant's request,
+identify the loan category, resolve the category-specific SOP, and coordinate
+the specialist agents and tools required for that application. This reduces
+manual document collection, repeated calculations, incorrect checklists, and
+unnecessary back-and-forth with applicants.
+
+```mermaid
+flowchart LR
+  REQUEST[Applicant request<br/>loan purpose + details] --> SUP[LoanAssist<br/>supervisor agent]
+  SUP --> ROUTER[Loan category router<br/>get_loan_sop()]
+  ROUTER --> STUDENT[Student / education SOP]
+  ROUTER --> BUSINESS[Business SOP]
+  ROUTER --> HOME[Home improvement SOP]
+  ROUTER --> OTHER[Medical / debt consolidation / personal SOP]
+
+  STUDENT --> AGENTS[Relevant agents + tools]
+  BUSINESS --> AGENTS
+  HOME --> AGENTS
+  OTHER --> AGENTS
+  AGENTS --> PACKAGE[Category-aware human-review package]
+```
+
+### Business Value
+
+- Fewer manual touches for document collection and review.
+- Different evidence requirements for different loan products.
+- Structured pass/fail results with reasons and source evidence.
+- Deterministic financial calculations instead of model-generated arithmetic.
+- Human review remains the final decision gate.
+
+The complete business case is documented in
+[preparation/01-business-case.md](preparation/01-business-case.md).
+
 ## Architecture
 
 ```mermaid
